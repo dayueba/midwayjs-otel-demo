@@ -1,0 +1,102 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  
+    # Defines a Prometheus configuration set.
+  prometheus:
+    # Define a set of configurations for scraping by the OpenTelemetry Collector.
+    config:
+      # The `scrape_configs` section pertains to the Prometheus `scrape_configs`
+      # configuration block.
+      # See https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
+      scrape_configs:
+        # Scrape Tempo metrics.
+        - job_name: 'tempo'
+          static_configs:
+            - targets: ['tempo:3200']
+              labels:
+                service: 'tempo'
+                group: 'infrastructure'
+
+        # Scrape Grafana metrics.
+        - job_name: 'grafana'
+          static_configs:
+            - targets: ['grafana:3000']
+              labels:
+                service: 'grafana'
+                group: 'infrastructure'
+        
+        - job_name: 'order-service'
+          scrape_interval: 2s
+          static_configs:
+            - targets: ['order-service:7071']
+              labels:
+                service: 'order-service'
+                group: 'service'
+
+# Define processors to process received data.
+# See https://opentelemetry.io/docs/collector/configuration/#connectors
+connectors:
+  # The spanmetrics connector is used to output span metrics based on received trace spans.
+  spanmetrics:
+    namespace: traces.spanmetrics   # Prefix all metrics with `traces.spanmetrics` (this becomes `traces_spanmetrics`).
+    # Determine the type of histogram to use for span metrics.
+    histogram:
+      explicit:                     # Explicit histograms have pre-defined bucket sizes (use default here).
+    # Defines additional label dimensions of the metrics from trace span attributes present.
+    dimensions:
+      - name: http.method
+      - name: http.target
+      - name: http.status_code
+      - name: service.version
+    # Ensure exemplars are enabled and sent to the metrics store.
+    exemplars:
+      enabled: true
+
+  # The servicegraph connector is used to output service node metrics based on received trace spans.
+  servicegraph:
+      # Defines which exporter the processor will write metrics to.
+      metrics_exporter: prometheusremotewrite
+      # Defines additional label dimensions of the metrics from trace span attributes present.
+      store:                      # Configuration for the in-memory store.
+        ttl: 2s                   # Time to wait for an edge to be completed.
+        max_items: 200            # Number of edges that will be stored in the storeMap.
+      cache_loop: 2m              # The timeout used to clean the cache periodically.
+      store_expiration_loop: 10s  # The timeout used to expire old entries from the store periodically.
+      # Virtual node peer attributes allow server nodes to be generated where instrumentation isn't present (eg. where
+      # service client calls remotely to a service that does not include instrumentation).
+      # Service nodes/edges will be generated for any attribute defined.
+      virtual_node_peer_attributes:
+        - db.name
+
+exporters:
+  debug:
+    verbosity: detailed
+  # Exporter for sending trace data to Tempo.
+  otlp/tempo:
+    # Send to the locally running Tempo service.
+    endpoint: tempo:4317
+    # TLS is not enabled for the instance.
+    tls:
+      insecure: true
+  
+  prometheusremotewrite:
+    endpoint: http://proemetheus:9009/api/v1/push
+    # TLS is not enabled for the instance.
+    tls:
+      insecure: true
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/tempo, debug]
+    metrics:
+      receivers: [prometheus]
+      exporters: [prometheusremotewrite]
+    # logs:
+    #   receivers: [otlp]
+    #   exporters: [debug]
