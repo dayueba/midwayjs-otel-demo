@@ -6,11 +6,15 @@ import { join } from 'path';
 // import { DefaultErrorFilter } from './filter/default.filter';
 // import { NotFoundFilter } from './filter/notfound.filter';
 import { ReportMiddleware } from './middleware/report.middleware';
+import * as otel from '@midwayjs/otel';
+import * as prometheus from '@midwayjs/prometheus';
 
 @Configuration({
   imports: [
     koa,
     validate,
+    otel,
+    prometheus,
     {
       component: info,
       enabledEnvironment: ['local'],

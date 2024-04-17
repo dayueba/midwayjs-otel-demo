@@ -6,4 +6,9 @@ export default {
   koa: {
     port: 7073,
   },
+  prometheus: {
+    labels: {
+      APP_NAME: 'product-service',
+    },
+  },
 } as MidwayConfig;

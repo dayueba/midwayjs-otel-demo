@@ -26,13 +26,31 @@ distributor:
     opencensus:
 
 ingester:
-  max_block_duration: 5m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
+  max_block_duration: 30m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
 
 compactor:
   compaction:
-    block_retention: 1h                # overall Tempo trace retention. set for demo purposes
+    block_retention: 24h                # overall Tempo trace retention. set for demo purposes
 
 metrics_generator:
+  # Specifies which processors to use.
+  processor:
+    # Span metrics create metrics based on span type, duration, name and service.
+    span_metrics:
+      # Configure extra dimensions to add as metric labels.
+      dimensions:
+        - http.method
+        - http.target
+        - http.status_code
+        - service.version
+    # Service graph metrics create node and edge metrics for determinng service interactions.
+    service_graphs:
+      # Configure extra dimensions to add as metric labels.
+      dimensions:
+        - http.method
+        - http.target
+        - http.status_code
+        - service.version
   registry:
     external_labels:
       source: tempo
@@ -40,7 +58,7 @@ metrics_generator:
   storage:
     path: /tmp/tempo/generator/wal
     remote_write:
-      - url: http://prometheus:9090/api/v1/write
+      - url: http://mimir:9009/api/v1/push
         send_exemplars: true
 
 storage:

@@ -8,6 +8,7 @@ import { join } from 'path';
 import { ReportMiddleware } from './middleware/report.middleware';
 import * as axios from '@midwayjs/axios';
 import * as otel from '@midwayjs/otel';
+import * as prometheus from '@midwayjs/prometheus';
 
 @Configuration({
   imports: [
@@ -15,6 +16,7 @@ import * as otel from '@midwayjs/otel';
     validate,
     axios,
     otel,
+    prometheus,
     {
       component: info,
       enabledEnvironment: ['local'],

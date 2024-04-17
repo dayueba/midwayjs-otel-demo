@@ -19,6 +19,7 @@
 - https://opentelemetry.io/docs/languages/js/
 - https://github.com/grafana/intro-to-mltp
 - https://grafana.com/docs/tempo/latest/getting-started/
+- tempo 参数 https://blog.frognew.com/2023/06/tempo-04-enable-multitenancy-and-block-retention.html
 
 todo
 - [ ] trace 和 metric 关联

@@ -1,3 +1,5 @@
+# 定义接收数据的协议
+# 文档 https://opentelemetry.io/docs/collector/configuration/#receivers
 receivers:
   otlp:
     protocols:
@@ -5,15 +7,27 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-  
-    # Defines a Prometheus configuration set.
+
   prometheus:
-    # Define a set of configurations for scraping by the OpenTelemetry Collector.
     config:
       # The `scrape_configs` section pertains to the Prometheus `scrape_configs`
       # configuration block.
       # See https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
       scrape_configs:
+        # Scrape Mimir metrics.
+        - job_name: 'mimir'
+          static_configs:
+            - targets: [ 'mimir:9009' ]
+              labels:
+                service: 'mimir'
+                group: 'infrastructure'
+        # Scrape Loki metrics.
+        - job_name: 'loki'
+          static_configs:
+            - targets: [ 'loki:3100' ]
+              labels:
+                service: 'loki'
+                group: 'infrastructure'
         # Scrape Tempo metrics.
         - job_name: 'tempo'
           static_configs:
@@ -21,7 +35,6 @@ receivers:
               labels:
                 service: 'tempo'
                 group: 'infrastructure'
-
         # Scrape Grafana metrics.
         - job_name: 'grafana'
           static_configs:
@@ -29,7 +42,7 @@ receivers:
               labels:
                 service: 'grafana'
                 group: 'infrastructure'
-        
+
         - job_name: 'order-service'
           scrape_interval: 2s
           static_configs:
@@ -37,6 +50,50 @@ receivers:
               labels:
                 service: 'order-service'
                 group: 'service'
+        - job_name: 'user-service'
+          scrape_interval: 2s
+          static_configs:
+            - targets: [ 'user-service:7072' ]
+              labels:
+                service: 'user-service'
+                group: 'service'
+        - job_name: 'product-service'
+          scrape_interval: 2s
+          static_configs:
+            - targets: [ 'product-service:7073' ]
+              labels:
+                service: 'product-service'
+                group: 'service'
+
+# Define processors to process received data.
+# See https://opentelemetry.io/docs/collector/configuration/#processors
+processors:
+  # Use the in-built `batch` processor to batch up data before writing it for export.
+  # Use the default values for it.
+  batch:
+
+
+  # The tail sampler processor will only keep traces where spans match the defined policies.
+  tail_sampling:
+    decision_wait: 30s    # The time to wait for a decision to be made.
+    # The following policies follow a logical OR pattern, meaning that if any of the policies match,
+    # the trace will be kept. For logical AND, you can use the `and` policy. Every span of a trace is
+    # examined by each policy in turn. A match will cause a short-circuit.
+    policies: [
+      # This policy defines that traces that include spans that contain errors should be kept.
+      {
+        name: sample-erroring-traces,           # Name of the policy.
+        type: status_code,                      # The type must match the type of policy to be used.
+        status_code: { status_codes: [ERROR] }  # Only sample traces which have a span containing an error.
+      },
+      # This policy defines that traces that are over 200ms should be sampled.
+      {
+        name: sample-long-traces,               # Name of the policy.
+        type: latency,                          # The type must match the type of policy to be used.
+        latency: { threshold_ms: 200 },         # Only sample traces which are longer than 200ms in duration.
+      },
+    ]
+
 
 # Define processors to process received data.
 # See https://opentelemetry.io/docs/collector/configuration/#connectors
@@ -83,19 +140,22 @@ exporters:
     # TLS is not enabled for the instance.
     tls:
       insecure: true
-  
+
   prometheusremotewrite:
-    endpoint: http://proemetheus:9009/api/v1/push
+    endpoint: http://mimir:9009/api/v1/push
     # TLS is not enabled for the instance.
     tls:
       insecure: true
+
 service:
   pipelines:
     traces:
       receivers: [otlp]
+      processors: [batch]
       exporters: [otlp/tempo, debug]
     metrics:
       receivers: [prometheus]
+      processors: [batch]
       exporters: [prometheusremotewrite]
     # logs:
     #   receivers: [otlp]
