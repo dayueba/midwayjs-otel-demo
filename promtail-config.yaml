@@ -19,7 +19,6 @@ scrape_configs:
             project: project
       - labels:
           level: null
-          traceId: null
           project: null
       - output:
           source: message
