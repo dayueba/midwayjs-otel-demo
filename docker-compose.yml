@@ -4,12 +4,18 @@ services:
     build: order-service/
     ports:
       - "7071:7071"
+    volumes:
+      - ./logs:/root/logs
   product-service:
     build: product-service/
+    volumes:
+      - ./logs:/root/logs
     # ports:
     #   - "7073:7073"
   user-service:
     build: user-service/
+    volumes:
+      - ./logs:/root/logs
     # ports:
     #   - "7072:7072"
   otel-collector:
@@ -71,9 +77,19 @@ services:
 #      - ./prometheus.yaml:/etc/prometheus.yaml
 #    ports:
 #      - "9090:9090"
+
   # The Loki service stores logs sent to it, and takes queries from Grafana
   # to visualise those logs.
   loki:
     image: grafana/loki:2.9.3
     ports:
       - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:2.9.3
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./promtail-config.yaml:/etc/conf/promtail-config.yaml
+      - ./logs:/home/logs
+    command: ["-config.file=/etc/conf/promtail-config.yaml"]

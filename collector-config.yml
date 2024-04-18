@@ -150,15 +150,15 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      # processors: [batch]
-      processors: [servicegraph, batch]
+      processors: [batch]
+#      processors: [servicegraph, batch]
       # processors: [tail_sampling, batch]
       # exporters: [otlp/tempo, debug]
       exporters: [otlp/tempo, spanmetrics]
     metrics:
-      receivers: [prometheus]
+      receivers: [prometheus, spanmetrics]
       # processors: [batch]
-      processors: [spanmetrics,batch]
+      processors: [batch]
       exporters: [prometheusremotewrite]
     # logs:
     #   receivers: [otlp]

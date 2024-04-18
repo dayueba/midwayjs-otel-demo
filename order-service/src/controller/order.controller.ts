@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Post } from '@midwayjs/core';
+import {Body, Controller, ILogger, Inject, Post} from '@midwayjs/core';
 import { HttpService } from '@midwayjs/axios';
 import { Context } from '@midwayjs/koa';
 
@@ -10,10 +10,14 @@ export class OrderController {
   @Inject()
   ctx: Context;
 
+  @Inject()
+  logger: ILogger;
+
   @Post('/')
   async createOrder(
     @Body() body: { uid: string; productId: string; count: number }
   ): Promise<any> {
+    this.logger.info(`createOrder: ${JSON.stringify(body)}` )
     const { data: user } = await this.httpService.get(
       `http://user-service:7072/users/${body.uid}`
     );

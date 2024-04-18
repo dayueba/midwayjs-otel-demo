@@ -23,7 +23,10 @@
 - tempo 参数 https://blog.frognew.com/2023/06/tempo-04-enable-multitenancy-and-block-retention.html
 
 todo
-- [x] trace 和 metric 关联
+- [ ] trace 和 metric 关联
 - [ ] trace 和 日志 关联
+  - [ ] 从trace跳到log
+  - [x] 从log跳到trace
+  ![img.png](images/img2.png)
 - [ ] cpu相关，[pyroscope](https://grafana.com/docs/pyroscope/latest/introduction/)
 - [ ] [Beyla](https://github.com/grafana/beyla)
