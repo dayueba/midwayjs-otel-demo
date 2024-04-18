@@ -10,7 +10,8 @@
 - otel/opentelemetry-collector-contrib
 - tempo
   - 支持本地存储，在只有一个节点的情况下，可以不需要对象存储
-- grafana
+- grafana 展示
+- metric： otel 收集 + mimir 存储 代替prometheus
 
 
 ![](./images/img.png)
@@ -22,5 +23,7 @@
 - tempo 参数 https://blog.frognew.com/2023/06/tempo-04-enable-multitenancy-and-block-retention.html
 
 todo
-- [ ] trace 和 metric 关联
+- [x] trace 和 metric 关联
 - [ ] trace 和 日志 关联
+- [ ] cpu相关，[pyroscope](https://grafana.com/docs/pyroscope/latest/introduction/)
+- [ ] [Beyla](https://github.com/grafana/beyla)

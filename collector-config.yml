@@ -72,13 +72,14 @@ processors:
   # Use the default values for it.
   batch:
 
-
-  # The tail sampler processor will only keep traces where spans match the defined policies.
+  # 尾部采样器
+  # see https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor
   tail_sampling:
-    decision_wait: 30s    # The time to wait for a decision to be made.
-    # The following policies follow a logical OR pattern, meaning that if any of the policies match,
-    # the trace will be kept. For logical AND, you can use the `and` policy. Every span of a trace is
-    # examined by each policy in turn. A match will cause a short-circuit.
+    decision_wait: 30s    # 在做出采样决定前，从轨迹的第一个跨度开始的等待时间，默认30s
+    num_traces: 50000 # 内存中保存的跟踪次数。默认50000
+    expected_new_traces_per_sec: 0 # 新轨迹的预期数量（有助于分配数据结构） 默认0
+    # 多个策略之间是 OR 的关系，只要满足一个就行，如果想要 and 关系，则使用 and 策略，具体看文档
+    # 匹配将导致断路，一个匹配成功后不会再判断是否匹配其他策略
     policies: [
       # This policy defines that traces that include spans that contain errors should be kept.
       {
@@ -95,7 +96,9 @@ processors:
     ]
 
 
-# Define processors to process received data.
+# 连接器是一种既是导出器又是接收器的组件。顾名思义，连接器将连接两个管道：它作为一个导出器接收一个管道的数据，
+# 作为一个接收器在另一个管道的开始处发送数据。它可以消费和发送相同数据类型的数据，也可以是不同的数据类型。
+# 连接器可以生成并发送汇总的数据，也可以简单地复制或路由数据。
 # See https://opentelemetry.io/docs/collector/configuration/#connectors
 connectors:
   # The spanmetrics connector is used to output span metrics based on received trace spans.
@@ -133,17 +136,13 @@ connectors:
 exporters:
   debug:
     verbosity: detailed
-  # Exporter for sending trace data to Tempo.
   otlp/tempo:
-    # Send to the locally running Tempo service.
     endpoint: tempo:4317
-    # TLS is not enabled for the instance.
     tls:
       insecure: true
 
   prometheusremotewrite:
     endpoint: http://mimir:9009/api/v1/push
-    # TLS is not enabled for the instance.
     tls:
       insecure: true
 
@@ -151,11 +150,15 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp/tempo, debug]
+      # processors: [batch]
+      processors: [servicegraph, batch]
+      # processors: [tail_sampling, batch]
+      # exporters: [otlp/tempo, debug]
+      exporters: [otlp/tempo, spanmetrics]
     metrics:
       receivers: [prometheus]
-      processors: [batch]
+      # processors: [batch]
+      processors: [spanmetrics,batch]
       exporters: [prometheusremotewrite]
     # logs:
     #   receivers: [otlp]

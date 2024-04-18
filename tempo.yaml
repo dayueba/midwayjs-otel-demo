@@ -26,11 +26,16 @@ distributor:
     opencensus:
 
 ingester:
-  max_block_duration: 30m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
+  trace_idle_period: 10s       # The length of time after a trace has not received spans to consider it complete and flush it.
+  max_block_bytes: 1_000_000   # Cut the head block when it hits this size or
+  max_block_duration: 5m       # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
 
 compactor:
   compaction:
-    block_retention: 24h                # overall Tempo trace retention. set for demo purposes
+    block_retention: 24h                # How long to keep blocks. Default is 14 days, this demo system is short-lived.
+    compaction_window: 1h              # Blocks in this time window will be compacted together.
+    max_block_bytes: 100_000_000       # Maximum size of a compacted block.
+    compacted_block_retention: 10m     # How long to keep compacted blocks stored elsewhere.
 
 metrics_generator:
   # Specifies which processors to use.
@@ -68,6 +73,11 @@ storage:
       path: /tmp/tempo/wal             # where to store the the wal locally
     local:
       path: /tmp/tempo/blocks
+  # Pool used for finding trace IDs.
+  pool:
+    max_workers: 100                 # Worker pool determines the number of parallel requests to the object store backend.
+    queue_depth: 10000               # Maximum depth for the querier queue jobs. A job is required for each block searched.
+
 
 overrides:
   defaults:
